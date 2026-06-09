@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-banwait-steroids-submit",
+  "title": "Nemotron Banwait Steroids Submit",
+  "code_file": "submit_banwait_steroids.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "banwait13/nemotron-on-steroids"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

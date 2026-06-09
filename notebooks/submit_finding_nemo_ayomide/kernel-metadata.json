@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-finding-nemo-ayomide-submit",
+  "title": "Nemotron Finding Nemo Ayomide Submit",
+  "code_file": "submit_finding_nemo_ayomide.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "ayomide2000/finding-nemo"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-dedquoc-svd-fusion-submit",
+  "title": "Nemotron Dedquoc SVD Fusion Submit",
+  "code_file": "submit_dedquoc_svd_fusion.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "dedquoc/nvidia-nmrc-low-rank-svd-lora-adapter-fusion"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-debat-0-86-output-submit",
+  "title": "Nemotron Debat 0.86 Output Submit",
+  "code_file": "submit_debat_086.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "debatreyabiswas/nemotroncomp-best0-86-solution-nvidia-under-5min"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

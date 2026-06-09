@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-keith-hk-to-kn-mamba-submit",
+  "title": "Submit Keith Hk To Kn Mamba",
+  "code_file": "submit_keith_hk_to_kn_mamba.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": [
+    "keithtyser/nemotron-086-adapters-20260605/Transformers/public_hk_to_kn_mamba_lam1p0/1"
+  ]
+}

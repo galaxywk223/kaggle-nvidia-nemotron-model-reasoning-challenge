@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-bbob-tier1-submit",
+  "title": "Nemotron Bbob Tier1 Submit",
+  "code_file": "submit_bbob_tier1.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "bbobwayne/nemotron-tier-1-lora-baseline"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

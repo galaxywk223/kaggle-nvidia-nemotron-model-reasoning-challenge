@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-mirza-top-scorer-20260612-submit",
+  "title": "Nemotron Mirza Top Scorer 20260612 Submit",
+  "code_file": "submit_mirza_top_scorer_20260612.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "mirzayasirabdullah07/top-scorer-nvidia-nemotron-competition"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

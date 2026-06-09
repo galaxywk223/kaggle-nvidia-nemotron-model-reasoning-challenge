@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-evgendvorkin-adapter-submit",
+  "title": "Nemotron Evgendvorkin Adapter Submit",
+  "code_file": "submit_evgendvorkin_adapter.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "evgendvorkin/nemotron-3-nano-lora-adapter-submission"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

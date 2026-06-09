@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-habanwer-atlas-submit",
+  "title": "Nemotron Habanwer ATLAS Submit",
+  "code_file": "submit_habanwer_atlas.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "habanwer/nemotron-atlas"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-mirza-lora-safetensors-submit",
+  "title": "Nemotron Mirza LoRA Safetensors Submit",
+  "code_file": "submit_mirza_lora_safetensors.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "mirzayasirabdullah07/nvidia-nemotron-lora-adapter-model-safetensors"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments and local config
+.env
+.venv/
+venv/
+env/
+*.local.json
+.codex-python-env.local.json
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Kaggle/local artifacts
+data/raw/*
+!data/raw/README.md
+models/*
+!models/.gitkeep
+submissions/*
+!submissions/.gitkeep
+logs/*
+!logs/.gitkeep
+notebooks/*.ipynb
+public_kernels/*
+!public_kernels/README.md
+tmp/
+tmp_*/
+*_output*/
+kaggle_*/
+
+# Large generated files
+*.csv
+*.jsonl
+*.log
+*.zip
+*.tar.gz
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.npy
+*.npz
+*.pkl
+*.parquet
+
+# Project exceptions
+!data/raw/README.md
+!logs/.gitkeep
+!models/.gitkeep
+!submissions/.gitkeep
+!public_kernels/README.md

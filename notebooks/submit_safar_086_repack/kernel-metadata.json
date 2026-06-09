@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-safar-086-repack-submit",
+  "title": "Nemotron Safar 0.86 Repack Submit",
+  "code_file": "submit_safar_086_repack.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "safar1/lb-score-0-86"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

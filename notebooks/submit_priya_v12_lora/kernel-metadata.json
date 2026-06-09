@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-priya-v12-lora-submit",
+  "title": "Submit Priya V12 Lora",
+  "code_file": "submit_priya_v12_lora.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": [
+    "priyankadehradun/priya-nemotron-lora/Transformers/v12/1"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "galaxy2025/nemotron-vng-refine-submit",
+  "title": "Nemotron Vng Refine Submit",
+  "code_file": "submit_vng_refine.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [],
+  "kernel_sources": [
+    "vngnguynhuy/refine"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}
