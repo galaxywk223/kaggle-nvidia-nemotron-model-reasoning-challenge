@@ -2,7 +2,7 @@
 
 **Silver Medal · Private LB #167 · Score 0.86**
 
-Silver-medal Kaggle solution toolkit for the best private leaderboard submission in the NVIDIA Nemotron Model Reasoning Challenge.
+Silver-medal Kaggle solution toolkit for a final private leaderboard submission in the NVIDIA Nemotron Model Reasoning Challenge.
 
 ## Result
 
@@ -13,8 +13,7 @@ Silver-medal Kaggle solution toolkit for the best private leaderboard submission
 | Private leaderboard rank | 167 |
 | Private leaderboard score | 0.86 |
 | Team | `galaxy2025` |
-| Best private leaderboard submission | `public mirza top scorer 20260612 output` |
-| Final candidate | `mirza_top_scorer_20260612_output` |
+| Final submission | `final_private_lb_086` |
 | Final candidate scores | Public `0.86`, private `0.86` |
 
 ![Private leaderboard row for rank 167](docs/assets/private-leaderboard-rank-167.png)
@@ -46,7 +45,7 @@ This repository preserves the best-scoring submission path and the reusable tool
 | Path | Purpose |
 | --- | --- |
 | `src/` | Python toolkit for adapter packaging, Kaggle submission, quota checks, and registry sync. |
-| `notebooks/submit_mirza_top_scorer_20260612/` | Final best-scoring Kaggle submission wrapper. |
+| `notebooks/final_submission/` | Final Kaggle submission wrapper. |
 | `candidate_registry.json` | Single-record ledger for the final public/private `0.86` candidate. |
 | `docs/RESULTS.md` | Private leaderboard evidence. |
 | `tests/` | Unit tests for the reusable tooling. |

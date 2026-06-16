@@ -1,11 +1,10 @@
 [
   {
-    "id": "mirza_top_scorer_20260612_output",
+    "id": "final_private_lb_086",
     "source": "mirzayasirabdullah07/top-scorer-nvidia-nemotron-competition",
     "type": "public_kernel_output_repack",
     "rank": 32,
-    "reason": "Best private leaderboard submission retained for the public showcase repository.",
-    "submission_message": "public mirza top scorer 20260612 output",
+    "reason": "Final retained private leaderboard submission for the public showcase repository.",
     "submission_ref": 53620005,
     "public_score": 0.86,
     "private_score": 0.86,
