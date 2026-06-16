@@ -2,7 +2,7 @@
 
 **Silver Medal · Private LB #167 · Score 0.86**
 
-Silver-medal Kaggle solution toolkit for LoRA adapter validation, submission automation, and candidate tracking in the NVIDIA Nemotron Model Reasoning Challenge.
+Silver-medal Kaggle solution toolkit for the best private leaderboard submission in the NVIDIA Nemotron Model Reasoning Challenge.
 
 ## Result
 
@@ -13,8 +13,9 @@ Silver-medal Kaggle solution toolkit for LoRA adapter validation, submission aut
 | Private leaderboard rank | 167 |
 | Private leaderboard score | 0.86 |
 | Team | `galaxy2025` |
-| Submissions | 34 |
-| Final candidate | `mirza_lora_safetensors_output` |
+| Best private leaderboard submission | `public mirza top scorer 20260612 output` |
+| Final candidate | `mirza_top_scorer_20260612_output` |
+| Final candidate scores | Public `0.86`, private `0.86` |
 
 ![Private leaderboard row for rank 167](docs/assets/private-leaderboard-rank-167.png)
 
@@ -22,12 +23,12 @@ Additional result evidence is available in [docs/RESULTS.md](docs/RESULTS.md).
 
 ## What This Repository Contains
 
-This repository packages the competition work as a reusable submission toolkit for adapter-based Kaggle competitions:
+This repository preserves the best-scoring submission path and the reusable tooling around it:
 
 - LoRA adapter validation for required files, archive layout, and rank limits.
 - Kaggle submission automation with polling, status capture, and score recording.
-- Remote Kaggle script generation for repacking public kernel or model artifacts.
-- Candidate tracking with public/private scores and submission references.
+- A remote Kaggle script wrapper for the final best-scoring submission.
+- A minimal candidate record for the final public/private `0.86` submission.
 - Tests covering packaging, submission matching, quota calculation, registry synchronization, and notebook generation.
 
 ## Competition Constraints
@@ -44,15 +45,15 @@ This repository packages the competition work as a reusable submission toolkit f
 
 | Path | Purpose |
 | --- | --- |
-| `src/` | Python toolkit for data inspection, adapter packaging, submission, quota checks, and registry sync. |
-| `notebooks/` | Kaggle script-kernel wrappers used to submit or repack candidate artifacts. |
-| `candidate_registry.json` | Machine-readable candidate ledger with Kaggle refs and scores. |
-| `docs/RESULTS.md` | Final private leaderboard evidence. |
+| `src/` | Python toolkit for adapter packaging, Kaggle submission, quota checks, and registry sync. |
+| `notebooks/submit_mirza_top_scorer_20260612/` | Final best-scoring Kaggle submission wrapper. |
+| `candidate_registry.json` | Single-record ledger for the final public/private `0.86` candidate. |
+| `docs/RESULTS.md` | Private leaderboard evidence. |
 | `tests/` | Unit tests for the reusable tooling. |
 
 ## Reproducibility
 
-The repository is intended to reproduce the tooling path, not to redistribute Kaggle data or model weights.
+The repository is intended to reproduce the tooling path for the retained best submission. It does not redistribute Kaggle data or model weights.
 
 ```powershell
 C:\Users\wangk\.conda\envs\Kaggle\python.exe -m pip install -r requirements.txt
