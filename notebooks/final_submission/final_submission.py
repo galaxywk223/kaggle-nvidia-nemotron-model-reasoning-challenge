@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 COMPETITION = "nvidia-nemotron-model-reasoning-challenge"
-MESSAGE = 'public mirza top scorer 20260612 output'
+MESSAGE = "final_private_lb_086"
 OUTPUT_ZIP = Path("/kaggle/working/submission.zip")
 REQUIRED = {"adapter_config.json", "adapter_model.safetensors"}
 MIN_ADAPTER_BYTES = 1_000_000

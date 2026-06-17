@@ -1,8 +1,8 @@
 # NVIDIA Nemotron Model Reasoning Challenge
 
-**Silver Medal · Private LB #167 · Score 0.86**
+**Kaggle Silver Medal · Private LB #167 · Public 0.864 / Private 0.860**
 
-Silver-medal Kaggle solution toolkit for a final private leaderboard submission in the NVIDIA Nemotron Model Reasoning Challenge.
+This repository presents a silver-medal solution workflow for the NVIDIA Nemotron Model Reasoning Challenge. The project centers on adapting `Nemotron-3-Nano-30B-A3B-BF16` with a rank-32 LoRA adapter for reasoning tasks, using Chain-of-Thought supervised fine-tuning and Kaggle GPU experiments.
 
 ## Result
 
@@ -11,75 +11,46 @@ Silver-medal Kaggle solution toolkit for a final private leaderboard submission 
 | Competition | NVIDIA Nemotron Model Reasoning Challenge |
 | Medal | Silver |
 | Private leaderboard rank | 167 |
-| Private leaderboard score | 0.86 |
+| Public score | 0.864 |
+| Private score | 0.860 |
 | Team | `galaxy2025` |
 | Final submission | `final_private_lb_086` |
-| Final candidate scores | Public `0.86`, private `0.86` |
+| Submission reference | `53620005` |
 
 ![Private leaderboard row for rank 167](docs/assets/private-leaderboard-rank-167.png)
 
-Additional result evidence is available in [docs/RESULTS.md](docs/RESULTS.md).
+Additional leaderboard details are available in [docs/RESULTS.md](docs/RESULTS.md).
 
-## What This Repository Contains
+## Approach
 
-This repository preserves the best-scoring submission path and the reusable tooling around it:
+The solution uses the official Nemotron base model as a fixed backbone and trains a LoRA adapter rather than fine-tuning all model parameters. The adapter is constrained to rank 32 and targets both attention projections (`q_proj`, `k_proj`, `v_proj`, `o_proj`) and MLP/expert projections (`in_proj`, `out_proj`, `up_proj`, `down_proj`), so the update can affect reasoning behavior beyond the final answer format.
 
-- LoRA adapter validation for required files, archive layout, and rank limits.
-- Kaggle submission automation with polling, status capture, and score recording.
-- A remote Kaggle script wrapper for the final best-scoring submission.
-- A minimal candidate record for the final public/private `0.86` submission.
-- Tests covering packaging, submission matching, quota calculation, registry synchronization, and notebook generation.
+Training data is converted from `prompt`, `answer`, and `generated_cot` fields into chat-style SFT examples. The user side appends a requirement that the final answer appear in `\boxed{}`. The assistant side keeps the generated reasoning trace, removes any existing boxed answer from the raw CoT, and appends a normalized `</think>` plus boxed target answer. This makes the supervision cover both intermediate reasoning and the competition answer format.
 
-## Competition Constraints
+The Kaggle training experiment uses 8192-token context length, BF16, gradient checkpointing, batch size 1, and 32-step gradient accumulation. Samples are ordered with a type-stratified sampler so each effective batch is less dominated by a single problem category. The final artifact is exported as a LoRA adapter and evaluated through Kaggle submissions.
 
-| Constraint | Value |
-| --- | --- |
-| Submission artifact | `submission.zip` |
-| Adapter format | LoRA adapter for `Nemotron-3-Nano-30B` |
-| Required root files | `adapter_config.json`, `adapter_model.safetensors` |
-| Maximum LoRA rank | 32 |
-| Daily submission limit | 5 |
+Adapter-level experiments compared single-adapter selection, SVD-based compression/reconstruction, and adapter fusion. Fusion variants underperformed substantially, with direct weight averaging dropping from the 0.86 range to about 0.51, TIES-style fusion to about 0.46, and SVD fusion to about 0.77. The final solution therefore uses a single stable adapter instead of combining low-rank updates with mismatched subspaces.
 
-## Project Layout
+## Repository Contents
 
 | Path | Purpose |
 | --- | --- |
-| `src/` | Python toolkit for adapter packaging, Kaggle submission, quota checks, and registry sync. |
-| `notebooks/final_submission/` | Final Kaggle submission wrapper. |
-| `candidate_registry.json` | Single-record ledger for the final public/private `0.86` candidate. |
-| `docs/RESULTS.md` | Private leaderboard evidence. |
-| `tests/` | Unit tests for the reusable tooling. |
+| `notebooks/training_experiment/` | Kaggle GPU LoRA SFT training experiment. |
+| `notebooks/final_submission/` | Kaggle script wrapper for the final submission. |
+| `src/` | Utilities for adapter packaging, Kaggle submission, quota checks, and score synchronization. |
+| `docs/RESULTS.md` | Final leaderboard result and screenshot. |
+| `tests/` | Unit tests for packaging, submission tracking, quota calculation, and notebook generation. |
 
-## Reproducibility
-
-The repository is intended to reproduce the tooling path for the retained best submission. It does not redistribute Kaggle data or model weights.
+## Run Checks
 
 ```powershell
 C:\Users\wangk\.conda\envs\Kaggle\python.exe -m pip install -r requirements.txt
 C:\Users\wangk\.conda\envs\Kaggle\python.exe -m pytest
 ```
 
-Core entry points:
-
-```powershell
-python -m src.package_adapter
-python -m src.kaggle_submit --message "submission message"
-python -m src.check_submissions --page-size 100
-python -m src.sync_candidate_registry --page-size 100
-python -m src.create_remote_submit_notebook --slug submit_example --kernel-source author/kernel --message "candidate message"
-```
-
-Kaggle credentials are expected through the standard Kaggle API configuration.
-
 ## Artifact Policy
 
-The repository excludes generated or restricted artifacts:
-
-- Official competition data.
-- Downloaded models and adapter weights.
-- `submission.zip` archives.
-- Runtime logs and local Kaggle caches.
-- Local environment files and credentials.
+The repository excludes Kaggle competition data, model weights, LoRA weight files, generated `submission.zip` archives, runtime logs, local caches, and credentials.
 
 ## License
 

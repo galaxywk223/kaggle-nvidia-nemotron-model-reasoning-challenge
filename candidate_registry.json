@@ -1,13 +1,13 @@
 [
   {
     "id": "final_private_lb_086",
-    "source": "mirzayasirabdullah07/top-scorer-nvidia-nemotron-competition",
-    "type": "public_kernel_output_repack",
+    "source": "final_submission_workflow",
+    "type": "final_lora_adapter_submission",
     "rank": 32,
-    "reason": "Final retained private leaderboard submission for the public showcase repository.",
+    "reason": "Final private leaderboard submission selected from adapter experiments.",
     "submission_ref": 53620005,
-    "public_score": 0.86,
-    "private_score": 0.86,
+    "public_score": 0.864,
+    "private_score": 0.860,
     "submission_status": "COMPLETE",
     "submission_date": "2026-06-13 00:50:59.073000"
   }

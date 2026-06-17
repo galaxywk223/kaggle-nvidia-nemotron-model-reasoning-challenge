@@ -1,0 +1,25 @@
+{
+  "id": "galaxy2025/nemotron-lora-training-experiment",
+  "title": "Nemotron LoRA Training Experiment",
+  "code_file": "kaggle_training_experiment.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": false,
+  "machine_shape": "NvidiaRtxPro6000",
+  "dataset_sources": [
+    "mayukh18/nemotron-packages",
+    "dgxchen/nemotron-cot-tong",
+    "dennisfong/nvidia-nemotron-offline-packages",
+    "rubyducklove/nvidia-cutlass",
+    "dgxchen/trained-adapter"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": [
+    "metric/nemotron-3-nano-30b-a3b-bf16/Transformers/default/1"
+  ]
+}

@@ -6,10 +6,12 @@
 | --- | --- |
 | Medal | Silver |
 | Private leaderboard rank | 167 |
-| Private leaderboard score | 0.86 |
+| Public score | 0.864 |
+| Private score | 0.860 |
 | Team | `galaxy2025` |
 | Final submission | `final_private_lb_086` |
-| Final candidate scores | Public `0.86`, private `0.86` |
+| Submission reference | `53620005` |
+| Submission date | `2026-06-13 00:50:59.073000` |
 
 ## Private Leaderboard Evidence
 

@@ -32,6 +32,9 @@ tmp/
 tmp_*/
 *_output*/
 kaggle_*/
+!notebooks/training_experiment/
+!notebooks/training_experiment/*.py
+!notebooks/training_experiment/kernel-metadata.json
 
 # Large generated files
 *.csv
