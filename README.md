@@ -25,7 +25,9 @@ Additional leaderboard details are available in [docs/RESULTS.md](docs/RESULTS.m
 
 The solution uses the official Nemotron base model as a fixed backbone and trains a LoRA adapter rather than fine-tuning all model parameters. The adapter is constrained to rank 32 and targets both attention projections (`q_proj`, `k_proj`, `v_proj`, `o_proj`) and MLP/expert projections (`in_proj`, `out_proj`, `up_proj`, `down_proj`), so the update can affect reasoning behavior beyond the final answer format.
 
-Training data is converted from `prompt`, `answer`, and `generated_cot` fields into chat-style SFT examples. The user side appends a requirement that the final answer appear in `\boxed{}`. The assistant side keeps the generated reasoning trace, removes any existing boxed answer from the raw CoT, and appends a normalized `</think>` plus boxed target answer. This makes the supervision cover both intermediate reasoning and the competition answer format.
+Teacher-CoT construction starts from the raw `prompt` and `answer` fields. The `src/generate_teacher_cot.py` pipeline calls an OpenAI-compatible teacher model to generate a visible solution trace, extracts the teacher final answer, and keeps only records whose normalized teacher answer matches the ground-truth answer. The matched output uses the `problem_ids_matched.csv` schema consumed by the SFT notebook: `id`, `prompt`, `answer`, `generated_cot`, and `type`.
+
+LoRA SFT converts `prompt`, `answer`, and `generated_cot` fields into chat-style training examples. The user side appends a requirement that the final answer appear in `\boxed{}`. The assistant side keeps the generated reasoning trace, removes any existing boxed answer from the raw CoT, and appends a normalized `</think>` plus boxed target answer. This makes the supervision cover both intermediate reasoning and the competition answer format.
 
 The Kaggle training experiment uses 8192-token context length, BF16, gradient checkpointing, batch size 1, and 32-step gradient accumulation. Samples are ordered with a type-stratified sampler so each effective batch is less dominated by a single problem category. The final artifact is exported as a LoRA adapter and evaluated through Kaggle submissions.
 
@@ -35,6 +37,7 @@ Adapter-level experiments compared single-adapter selection, SVD-based compressi
 
 | Path | Purpose |
 | --- | --- |
+| `src/generate_teacher_cot.py` | Teacher-CoT construction from raw prompt-answer data to matched SFT records. |
 | `notebooks/training_experiment/` | Kaggle GPU LoRA SFT training experiment. |
 | `notebooks/final_submission/` | Kaggle script wrapper for the final submission. |
 | `src/` | Utilities for adapter packaging, Kaggle submission, quota checks, and score synchronization. |

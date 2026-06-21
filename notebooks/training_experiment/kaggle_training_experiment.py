@@ -17,6 +17,7 @@ assert (TRAIN_ON_KAGGLE + USE_PRETRAINED) == 1, "Set exactly one mode."
 BASE_MODEL_NAME = "nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B-BF16"
 MODEL_SOURCE = "metric/nemotron-3-nano-30b-a3b-bf16/transformers/default"
 PRETRAINED_ADAPTER_DATASET_PATH = "/kaggle/input/datasets/dgxchen/trained-adapter"
+# Matched prompt-answer-CoT records produced by the Teacher-CoT construction stage.
 TRAIN_DATA_PATH = "/kaggle/input/datasets/dgxchen/nemotron-cot-tong/problem_ids_matched.csv"
 OUTPUT_DIR = Path("/kaggle/working")
 ADAPTER_OUTPUT_DIR = OUTPUT_DIR / "sft_adapter"
