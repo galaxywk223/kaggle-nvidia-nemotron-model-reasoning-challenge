@@ -6,7 +6,9 @@ import shutil
 import subprocess
 import sys
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 TRAIN_ON_KAGGLE = int(os.environ.get("TRAIN_ON_KAGGLE", "1"))
@@ -23,6 +25,291 @@ OUTPUT_DIR = Path("/kaggle/working")
 ADAPTER_OUTPUT_DIR = OUTPUT_DIR / "sft_adapter"
 SUBMISSION_ADAPTER_DIR = OUTPUT_DIR / "submission_adapter"
 SUBMISSION_ZIP = OUTPUT_DIR / "submission.zip"
+IGNORE_INDEX = -100
+
+
+@dataclass(frozen=True)
+class PreparedSFTExample:
+    input_ids: list[int]
+    attention_mask: list[int]
+    labels: list[int]
+    loss_weights: list[float]
+    sample_id: str
+    problem_type: str
+    truncated: bool
+    supervised_tokens: int
+    answer_weighted_tokens: int
+
+    def to_record(self) -> dict[str, Any]:
+        return {
+            "input_ids": self.input_ids,
+            "attention_mask": self.attention_mask,
+            "labels": self.labels,
+            "loss_weights": self.loss_weights,
+            "id": self.sample_id,
+            "type": self.problem_type,
+            "truncated": self.truncated,
+        }
+
+
+def strip_boxed_answers(text: str) -> str:
+    import re
+
+    return re.sub(r"\\boxed\{[^}]*\}", "", text).rstrip()
+
+
+def render_chat_text(tokenizer: Any, prompt: str, assistant_content: str) -> str:
+    messages = [
+        {"role": "user", "content": prompt},
+        {"role": "assistant", "content": assistant_content},
+    ]
+    try:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+            enable_thinking=True,
+        )
+    except TypeError:
+        return tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=False,
+        )
+
+
+def assert_tokenizer_supports_offsets(tokenizer: Any) -> None:
+    try:
+        encoded = tokenizer("offset smoke test", return_offsets_mapping=True, add_special_tokens=False)
+    except Exception as exc:  # pragma: no cover - exception type depends on tokenizer implementation.
+        raise RuntimeError(
+            "The training tokenizer must support return_offsets_mapping=True. "
+            "Use a fast tokenizer or a tokenizer implementation that returns offsets."
+        ) from exc
+    if "offset_mapping" not in encoded:
+        raise RuntimeError("The training tokenizer did not return offset_mapping.")
+    if len(encoded["offset_mapping"]) != len(encoded["input_ids"]):
+        raise RuntimeError("Tokenizer offset_mapping length does not match input_ids length.")
+
+
+def _find_unique_span(text: str, needle: str, label: str, sample_id: str) -> tuple[int, int]:
+    start = text.find(needle)
+    if start < 0:
+        raise ValueError(f"Sample {sample_id}: {label} was not found in the rendered chat text.")
+    next_start = text.find(needle, start + len(needle))
+    if next_start >= 0:
+        raise ValueError(f"Sample {sample_id}: {label} is not unique in the rendered chat text.")
+    return start, start + len(needle)
+
+
+def _tokenize_with_offsets(tokenizer: Any, rendered_text: str, sample_id: str) -> dict[str, Any]:
+    try:
+        encoded = tokenizer(
+            rendered_text,
+            return_offsets_mapping=True,
+            add_special_tokens=False,
+            truncation=False,
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Sample {sample_id}: tokenizer failed with return_offsets_mapping=True."
+        ) from exc
+    if "offset_mapping" not in encoded:
+        raise RuntimeError(f"Sample {sample_id}: tokenizer did not return offset_mapping.")
+    if len(encoded["offset_mapping"]) != len(encoded["input_ids"]):
+        raise RuntimeError(f"Sample {sample_id}: offset_mapping length does not match input_ids length.")
+    return encoded
+
+
+def _overlaps_span(token_span: tuple[int, int] | list[int], char_span: tuple[int, int]) -> bool:
+    token_start, token_end = int(token_span[0]), int(token_span[1])
+    char_start, char_end = char_span
+    if token_end <= token_start:
+        return False
+    return token_start < char_end and token_end > char_start
+
+
+def _build_tokenized_example(
+    *,
+    tokenizer: Any,
+    prompt: str,
+    cot_text: str,
+    answer: str,
+    sample_id: str,
+    problem_type: str,
+    answer_weight: float,
+    truncated: bool,
+) -> PreparedSFTExample:
+    answer_marker = f"</think>\n\\boxed{{{answer}}}"
+    assistant_content = cot_text + "\n" + answer_marker
+    rendered_text = render_chat_text(tokenizer, prompt, assistant_content)
+    assistant_span = _find_unique_span(rendered_text, assistant_content, "assistant content", sample_id)
+    answer_span = _find_unique_span(rendered_text, answer_marker, "answer suffix", sample_id)
+    encoded = _tokenize_with_offsets(tokenizer, rendered_text, sample_id)
+
+    input_ids = list(encoded["input_ids"])
+    attention_mask = list(encoded.get("attention_mask", [1] * len(input_ids)))
+    labels: list[int] = []
+    loss_weights: list[float] = []
+    supervised_tokens = 0
+    answer_weighted_tokens = 0
+
+    for token_id, offset in zip(input_ids, encoded["offset_mapping"], strict=True):
+        is_assistant = _overlaps_span(offset, assistant_span)
+        is_answer = _overlaps_span(offset, answer_span)
+        if is_assistant:
+            labels.append(int(token_id))
+            supervised_tokens += 1
+            if is_answer:
+                loss_weights.append(float(answer_weight))
+                answer_weighted_tokens += 1
+            else:
+                loss_weights.append(1.0)
+        else:
+            labels.append(IGNORE_INDEX)
+            loss_weights.append(0.0)
+
+    if supervised_tokens == 0:
+        raise ValueError(f"Sample {sample_id}: no assistant tokens were supervised.")
+    if answer_weighted_tokens == 0:
+        raise ValueError(f"Sample {sample_id}: answer suffix did not cover any supervised tokens.")
+
+    return PreparedSFTExample(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        labels=labels,
+        loss_weights=loss_weights,
+        sample_id=sample_id,
+        problem_type=problem_type,
+        truncated=truncated,
+        supervised_tokens=supervised_tokens,
+        answer_weighted_tokens=answer_weighted_tokens,
+    )
+
+
+def prepare_sft_example(
+    *,
+    tokenizer: Any,
+    prompt: str,
+    answer: str,
+    cot_text: str,
+    sample_id: str,
+    problem_type: str,
+    max_length: int,
+    answer_weight: float = 2.0,
+) -> PreparedSFTExample:
+    full_example = _build_tokenized_example(
+        tokenizer=tokenizer,
+        prompt=prompt,
+        cot_text=cot_text,
+        answer=answer,
+        sample_id=sample_id,
+        problem_type=problem_type,
+        answer_weight=answer_weight,
+        truncated=False,
+    )
+    if len(full_example.input_ids) <= max_length:
+        return full_example
+
+    empty_example = _build_tokenized_example(
+        tokenizer=tokenizer,
+        prompt=prompt,
+        cot_text="",
+        answer=answer,
+        sample_id=sample_id,
+        problem_type=problem_type,
+        answer_weight=answer_weight,
+        truncated=True,
+    )
+    if len(empty_example.input_ids) > max_length:
+        raise ValueError(
+            f"Sample {sample_id}: prompt plus required answer suffix uses {len(empty_example.input_ids)} "
+            f"tokens, exceeding max_length={max_length}."
+        )
+
+    low = 0
+    high = len(cot_text)
+    best = empty_example
+    while low <= high:
+        mid = (low + high) // 2
+        candidate_cot = cot_text[:mid].rstrip()
+        candidate = _build_tokenized_example(
+            tokenizer=tokenizer,
+            prompt=prompt,
+            cot_text=candidate_cot,
+            answer=answer,
+            sample_id=sample_id,
+            problem_type=problem_type,
+            answer_weight=answer_weight,
+            truncated=True,
+        )
+        if len(candidate.input_ids) <= max_length:
+            best = candidate
+            low = mid + 1
+        else:
+            high = mid - 1
+
+    return best
+
+
+class WeightedDataCollator:
+    def __init__(
+        self,
+        *,
+        pad_token_id: int,
+        label_pad_token_id: int = IGNORE_INDEX,
+        pad_to_multiple_of: int | None = None,
+    ) -> None:
+        self.pad_token_id = pad_token_id
+        self.label_pad_token_id = label_pad_token_id
+        self.pad_to_multiple_of = pad_to_multiple_of
+
+    def __call__(self, features: list[dict[str, Any]]) -> dict[str, Any]:
+        import torch
+
+        max_length = max(len(feature["input_ids"]) for feature in features)
+        if self.pad_to_multiple_of:
+            remainder = max_length % self.pad_to_multiple_of
+            if remainder:
+                max_length += self.pad_to_multiple_of - remainder
+
+        batch = {
+            "input_ids": [],
+            "attention_mask": [],
+            "labels": [],
+            "loss_weights": [],
+        }
+        for feature in features:
+            pad_length = max_length - len(feature["input_ids"])
+            batch["input_ids"].append(feature["input_ids"] + [self.pad_token_id] * pad_length)
+            batch["attention_mask"].append(feature["attention_mask"] + [0] * pad_length)
+            batch["labels"].append(feature["labels"] + [self.label_pad_token_id] * pad_length)
+            batch["loss_weights"].append(feature["loss_weights"] + [0.0] * pad_length)
+
+        return {
+            "input_ids": torch.tensor(batch["input_ids"], dtype=torch.long),
+            "attention_mask": torch.tensor(batch["attention_mask"], dtype=torch.long),
+            "labels": torch.tensor(batch["labels"], dtype=torch.long),
+            "loss_weights": torch.tensor(batch["loss_weights"], dtype=torch.float32),
+        }
+
+
+def weighted_causal_lm_loss(logits: Any, labels: Any, loss_weights: Any) -> Any:
+    import torch.nn.functional as F
+
+    shift_logits = logits[:, :-1, :].contiguous()
+    shift_labels = labels[:, 1:].contiguous()
+    shift_weights = loss_weights[:, 1:].to(device=shift_logits.device).contiguous()
+
+    active = shift_labels.ne(IGNORE_INDEX)
+    safe_labels = shift_labels.masked_fill(~active, 0)
+    token_loss = F.cross_entropy(
+        shift_logits.view(-1, shift_logits.size(-1)),
+        safe_labels.view(-1),
+        reduction="none",
+    ).view_as(shift_labels)
+    shift_weights = shift_weights.to(dtype=token_loss.dtype).masked_fill(~active, 0.0)
+    return (token_loss * shift_weights).sum() / shift_weights.sum().clamp_min(1.0)
 
 
 def install_offline_packages() -> None:
@@ -80,7 +367,6 @@ def install_offline_packages() -> None:
 def train_lora_adapter() -> Path:
     import gc
     import math
-    import re
     import random
     import time
     from collections import defaultdict
@@ -91,10 +377,12 @@ def train_lora_adapter() -> Path:
     import torch
     from datasets import Dataset as HFDataset
     from torch.utils.data import DataLoader, Sampler
-    from trl import SFTConfig, SFTTrainer
+    from transformers import Trainer, TrainingArguments
     from unsloth import FastLanguageModel
 
     seed = 42
+    max_length = 8192
+    answer_weight = 2.0
     prompt_suffix = "\nPlease put your final answer inside `\\boxed{}`. For example: `\\boxed{your answer}`"
 
     model_path = kagglehub.model_download(MODEL_SOURCE)
@@ -111,6 +399,9 @@ def train_lora_adapter() -> Path:
     )
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    if tokenizer.pad_token_id is None:
+        raise RuntimeError("Tokenizer must define pad_token_id or eos_token_id for padded training batches.")
+    assert_tokenizer_supports_offsets(tokenizer)
 
     model = FastLanguageModel.get_peft_model(
         model,
@@ -136,47 +427,54 @@ def train_lora_adapter() -> Path:
     train_df = df.sample(frac=1, random_state=seed).reset_index(drop=True)
     records = []
     record_types = []
+    skipped_short_cot = 0
+    truncated_count = 0
+    supervised_token_count = 0
+    answer_weighted_token_count = 0
     for _, row in train_df.iterrows():
+        sample_id = str(row.get("id", len(records)))
         prompt = str(row["prompt"])
         answer = str(row["answer"])
         cot = str(row["generated_cot"])
         if not cot or cot == "nan" or len(cot.strip()) < 5:
+            skipped_short_cot += 1
             continue
-        cot_cleaned = re.sub(r"\\boxed\{[^}]*\}", "", cot).rstrip()
-        records.append(
-            {
-                "messages": [
-                    {"role": "user", "content": prompt + prompt_suffix},
-                    {"role": "assistant", "content": cot_cleaned + f"\n</think>\n\\boxed{{{answer}}}"},
-                ]
-            }
+        cot_cleaned = strip_boxed_answers(cot)
+        prepared = prepare_sft_example(
+            tokenizer=tokenizer,
+            prompt=prompt + prompt_suffix,
+            answer=answer,
+            cot_text=cot_cleaned,
+            sample_id=sample_id,
+            problem_type=str(row["type"]),
+            max_length=max_length,
+            answer_weight=answer_weight,
         )
-        record_types.append(str(row["type"]))
+        records.append(prepared.to_record())
+        record_types.append(prepared.problem_type)
+        truncated_count += int(prepared.truncated)
+        supervised_token_count += prepared.supervised_tokens
+        answer_weighted_token_count += prepared.answer_weighted_tokens
 
+    if not records:
+        raise RuntimeError("No SFT records were prepared for training.")
     dataset = HFDataset.from_list(records)
+    print(
+        json.dumps(
+            {
+                "prepared_records": len(records),
+                "skipped_short_cot": skipped_short_cot,
+                "truncated_records": truncated_count,
+                "supervised_tokens": supervised_token_count,
+                "answer_weighted_tokens": answer_weighted_token_count,
+                "answer_weight": answer_weight,
+                "max_length": max_length,
+            },
+            indent=2,
+        )
+    )
 
-    def formatting_prompts_func(example):
-        messages = example["messages"]
-        conversations = [messages] if messages and isinstance(messages[0], dict) else messages
-        texts = []
-        for conversation in conversations:
-            try:
-                text = tokenizer.apply_chat_template(
-                    conversation,
-                    tokenize=False,
-                    add_generation_prompt=False,
-                    enable_thinking=True,
-                )
-            except TypeError:
-                text = tokenizer.apply_chat_template(
-                    conversation,
-                    tokenize=False,
-                    add_generation_prompt=False,
-                )
-            texts.append(text)
-        return texts
-
-    training_args = SFTConfig(
+    training_args = TrainingArguments(
         output_dir=str(OUTPUT_DIR / "sft_output"),
         num_train_epochs=1,
         per_device_train_batch_size=1,
@@ -184,7 +482,6 @@ def train_lora_adapter() -> Path:
         learning_rate=2e-4,
         lr_scheduler_type="linear",
         warmup_steps=0,
-        max_length=8192,
         adam_beta1=0.9,
         adam_beta2=0.95,
         adam_epsilon=1e-8,
@@ -199,7 +496,6 @@ def train_lora_adapter() -> Path:
         remove_unused_columns=False,
         seed=seed,
         report_to="none",
-        packing=False,
     )
 
     def build_stratified_index_order(labels: list[str], batch_size: int, sampler_seed: int) -> list[int]:
@@ -237,7 +533,15 @@ def train_lora_adapter() -> Path:
         def __len__(self) -> int:
             return len(self.order)
 
-    class StratifiedSFTTrainer(SFTTrainer):
+    class WeightedCausalLMTrainer(Trainer):
+        def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
+            labels = inputs.pop("labels")
+            loss_weights = inputs.pop("loss_weights")
+            outputs = model(**inputs)
+            loss = weighted_causal_lm_loss(outputs.logits, labels, loss_weights)
+            return (loss, outputs) if return_outputs else loss
+
+    class StratifiedTrainer(WeightedCausalLMTrainer):
         def __init__(self, *args, stratified_order: list[int] | None = None, **kwargs) -> None:
             super().__init__(*args, **kwargs)
             self.stratified_order = stratified_order
@@ -271,25 +575,17 @@ def train_lora_adapter() -> Path:
     stratified_order = build_stratified_index_order(record_types, effective_batch_size, seed)
     print(f"Approx stratified effective batch size: {effective_batch_size}")
     print("Stratified batching by type:", dict(sorted(pd.Series(record_types).value_counts().to_dict().items())))
-
+    trainer_kwargs = {
+        "model": model,
+        "args": training_args,
+        "train_dataset": dataset,
+        "data_collator": WeightedDataCollator(pad_token_id=tokenizer.pad_token_id),
+        "stratified_order": stratified_order,
+    }
     try:
-        trainer = StratifiedSFTTrainer(
-            model=model,
-            args=training_args,
-            train_dataset=dataset,
-            processing_class=tokenizer,
-            formatting_func=formatting_prompts_func,
-            stratified_order=stratified_order,
-        )
+        trainer = StratifiedTrainer(**trainer_kwargs, processing_class=tokenizer)
     except TypeError:
-        trainer = StratifiedSFTTrainer(
-            model=model,
-            args=training_args,
-            train_dataset=dataset,
-            tokenizer=tokenizer,
-            formatting_func=formatting_prompts_func,
-            stratified_order=stratified_order,
-        )
+        trainer = StratifiedTrainer(**trainer_kwargs, tokenizer=tokenizer)
 
     print("Starting SFT training...")
     started_at = time.time()
